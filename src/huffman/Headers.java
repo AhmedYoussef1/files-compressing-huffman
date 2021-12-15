@@ -19,13 +19,9 @@ public class Headers {
 	}
 	
 	public int readHeaders(byte[] buffer, TreeNode tree) {
-		int n = ByteBuffer.wrap(buffer, 0, 4).getInt();
+		int n = ByteBuffer.wrap(buffer, 0, 5).getInt();
 		int unusedBytes = ByteBuffer.wrap(buffer, 4, 4).getInt();
 		int unusedBits = buffer[8];
-		
-		System.out.println("n: " + n);
-		System.out.println("unusedBytes: " + unusedBytes);
-		System.out.println("unusedBits: " + unusedBits);
 		
 		Files.set_n(n);
 		Files.unusedBytes = unusedBytes;
