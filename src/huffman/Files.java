@@ -60,7 +60,7 @@ public class Files {
 		return null;
 	}
 
-	public void compress(File inputFile, File outputFile, Map<String, boolean[]> table, TreeNode root) {
+	public void compress(File inputFile, File outputFile, Map<String, boolean[]> table, TreeNode root) throws IOException {
 		int buffSize = Files.n * ((max_memory() << 1) / Files.n); // max_memory / 2
 		if (buffSize == 0)
 			buffSize = Files.n;
@@ -68,50 +68,47 @@ public class Files {
 		byte[] buffer = new byte[buffSize], out_buffer;
 		Bits compressed = new Bits(buffSize * 8);
 
-		try {
-			InputStream in = new FileInputStream(inputFile);
-			OutputStream out = new FileOutputStream(outputFile);
+		InputStream in = new FileInputStream(inputFile);
+		OutputStream out = new FileOutputStream(outputFile);
 
-			byte lastByte = 0;
-			int read, lastBits = 0;
+		byte lastByte = 0;
+		int read, lastBits = 0;
 
-			// headers
-			Headers h = new Headers();
-			h.writeHeaders(compressed, get_n(), unusedBytes, unusedBits, root);
+		// headers
+		Headers h = new Headers();
+		h.writeHeaders(compressed, get_n(), unusedBytes, unusedBits, root);
+		while (compressed.length() % 8 != 0)
+			compressed.appendZero();
 
-			// data
-			while ((read = in.read(buffer)) > 0) {
-				for (int i = 0; i < read; i += Files.n) {
-					byte[] word = Arrays.copyOfRange(buffer, i, i + Files.n);
-					compressed.append(table.get(Bits.hashMe(word)));
-				}
-				// write compressed to file (without the last byte)
-				out_buffer = compressed.bytes_plusOne();
-				out.write(out_buffer, 0, out_buffer.length - 2);
-				// store last bits
-				lastBits = compressed.length() % 8;
-				lastByte = out_buffer[out_buffer.length - 2];
-
-				compressed.clear();
-				// add last bits
-				compressed.append(lastByte, lastBits);
-
-				// clear the buffer
-				buffer = new byte[buffSize];
+		// data
+		while ((read = in.read(buffer)) > 0) {
+			for (int i = 0; i < read; i += Files.n) {
+				byte[] word = Arrays.copyOfRange(buffer, i, i + Files.n);
+				compressed.append(table.get(Bits.hashMe(word)));
 			}
-			// write last bits
-			if (lastBits > 0)
-				out.write(lastByte);
+			// write compressed to file (without the last byte)
+			out_buffer = compressed.bytes_plusOne();
+			out.write(out_buffer, 0, out_buffer.length - 2);
+			// store last bits
+			lastBits = compressed.length() % 8;
+			lastByte = out_buffer[out_buffer.length - 2];
 
-			in.close();
-			out.close();
+			compressed.clear();
+			// add last bits
+			compressed.append(lastByte, lastBits);
 
-		} catch (IOException e) {
-			e.printStackTrace();
+			// clear the buffer
+			buffer = new byte[buffSize];
 		}
+		// write last bits
+		if (lastBits > 0)
+			out.write(lastByte);
+
+		in.close();
+		out.close();
 	}
 
-	public void decompress(File inputFile, File outputFile) {
+	public void decompress(File inputFile, File outputFile) throws IOException {
 		int buffSize = max_memory() >> 2; // max_memory / 4
 		if (buffSize == 0)
 			buffSize = 1;
@@ -119,46 +116,42 @@ public class Files {
 		byte[] buffer = new byte[buffSize];
 		ByteBuffer uncompressed = ByteBuffer.allocate(buffSize << 2);
 
-		try {
-			InputStream in = new FileInputStream(inputFile);
-			OutputStream out = new FileOutputStream(outputFile);
+		InputStream in = new FileInputStream(inputFile);
+		OutputStream out = new FileOutputStream(outputFile);
 
-			int read, pos = 0, unreaded = (int) inputFile.length();
-			Object[] decoded;
-			TreeNode root = new TreeNode(), node = null;
-			
-			
-			
-			boolean firstRead = true;
-			while ((read = in.read(buffer)) > 0) {
-				if(firstRead) { // read headers
-					Headers h = new Headers();
-					pos = h.readHeaders(buffer, root);
-					firstRead = false;
-				}
-				
-				unreaded -= read;
-				int len = (unreaded > 0) ? read * 8 : read * 8 - unusedBits;
-				int extraBytes = (unreaded > 0) ? 0 : unusedBytes;
-
-				while (pos < len) { // read until end of the buffer
-					decoded = decode(root, node, buffer, pos, len, uncompressed);
-					node = (TreeNode) decoded[0];
-					pos = (int) decoded[1];
-					out.write(uncompressed.array(), 0, uncompressed.position() - extraBytes);
-					uncompressed.clear();
-				}
-				// clear buffer
-				buffer = new byte[buffSize];
-				pos = 0;
+		int read, pos = 0, unreaded = (int) inputFile.length();
+		Object[] decoded;
+		TreeNode root = new TreeNode(), node = null;
+		
+		boolean firstRead = true;
+		while ((read = in.read(buffer)) > 0) {
+			if(firstRead) { // read headers
+				Headers h = new Headers();
+				pos = h.readHeaders(buffer, root);
+				while (pos % 8 != 0)
+					pos++;
+				firstRead = false;
 			}
+			
+			unreaded -= read;
+			int len = (unreaded > 0) ? read * 8 : read * 8 - unusedBits;
+			int extraBytes = (unreaded > 0) ? 0 : unusedBytes;
 
-			in.close();
-			out.close();
-
-		} catch (IOException e) {
-			e.printStackTrace();
+			while (pos < len) { // read until end of the buffer
+				decoded = decode(root, node, buffer, pos, len, uncompressed);
+				node = (TreeNode) decoded[0];
+				pos = (int) decoded[1];
+				out.write(uncompressed.array(), 0, uncompressed.position() - extraBytes);
+				uncompressed.clear();
+			}
+			// clear buffer
+			buffer = new byte[buffSize];
+			pos = 0;
 		}
+
+		in.close();
+		out.close();
+
 	}
 
 	private Object[] decode(TreeNode root, TreeNode node, byte[] read, int offset, int bitLen, ByteBuffer write) {

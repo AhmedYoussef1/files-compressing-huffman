@@ -1,6 +1,7 @@
 package huffman;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,7 +20,7 @@ public class MainIsHere {
 		return original_path.substring(0, dot) + "-d" + original_path.substring(dot);
 	}
 	
-	private static void compressFile(String path) {
+	private static void compressFile(String path) throws IOException {
 		Files f = new Files();
 		Tree_construct tree_c = new Tree_construct();
 		File inFile = new File(path), outFile = new File(compPath(path));
@@ -49,7 +50,7 @@ public class MainIsHere {
 		System.out.println("Done!");
 	}
 	
-	private static void decompressFile(String inPath) {
+	private static void decompressFile(String inPath) throws IOException {
 		Files f = new Files();
 		File inFile = new File(inPath), outFile = new File(decompPath(inPath));
 		
@@ -61,8 +62,8 @@ public class MainIsHere {
 	public static void main(String[] args) {
 		boolean debug = true;
 		boolean compress = true;
-		String path = "files/project.txt";
-		int n = 4;
+		String path = "files/img.png";
+		int n = 32;
 		
 		try {
 			if(debug) {
