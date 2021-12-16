@@ -3,9 +3,8 @@ package huffman;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import bits.Bits;
+import table.HuffmanTable;
 
 public class Files {
 	private static int n = 1; // number of bytes per word
@@ -25,37 +24,29 @@ public class Files {
 
 	public static int unusedBytes, unusedBits;
 
-	public Map<String, TreeNode> freq_table(File file) throws IOException {
+	public void freq_table(File file, HuffmanTable huffTable) throws IOException {
 		int buffSize = Files.n * (max_memory() / Files.n);
 		if (buffSize == 0)
 			buffSize = Files.n;
 
-		byte[] buffer = new byte[buffSize];
-		Map<String, TreeNode> table = new HashMap<>();
-
 		InputStream f = new FileInputStream(file);
+		byte[] buffer = new byte[buffSize];
+
 		int read;
 		while ((read = f.read(buffer)) > 0) { // read from file
 			// analysis the buffer
 			int i = 0;
 			for (; i < read; i += Files.n) {
 				byte[] word = Arrays.copyOfRange(buffer, i, i + Files.n);
-				String key = Bits.hashMe(word);
-
-				TreeNode node = table.get(key);
-				if (node == null)
-					table.put(key, new TreeNode(word, 1));
-				else
-					node.inc_freq();
+				huffTable.frequency(word);
 			}
 			// clear the buffer
 			buffer = new byte[buffSize];
 		}
 		f.close();
-		return table;
 	}
 
-	public void compress(File inputFile, File outputFile, Map<String, boolean[]> table, TreeNode root) throws IOException {
+	public void compress(File inputFile, File outputFile, HuffmanTable huffTable, TreeNode root) throws IOException {
 		int buffSize = Files.n * ((max_memory() << 1) / Files.n); // max_memory / 2
 		if (buffSize == 0)
 			buffSize = Files.n;
@@ -79,7 +70,7 @@ public class Files {
 		while ((read = in.read(buffer)) > 0) {
 			for (int i = 0; i < read; i += Files.n) {
 				byte[] word = Arrays.copyOfRange(buffer, i, i + Files.n);
-				compressed.append(table.get(Bits.hashMe(word)));
+				compressed.append(huffTable.get(word).code);
 			}
 			// write compressed to file (without the last byte)
 			out_buffer = compressed.bytes_plusOne();
@@ -117,17 +108,17 @@ public class Files {
 		int read, pos = 0, unreaded = (int) inputFile.length();
 		Object[] decoded;
 		TreeNode root = new TreeNode(), node = null;
-		
+
 		boolean firstRead = true;
 		while ((read = in.read(buffer)) > 0) {
-			if(firstRead) { // read headers
+			if (firstRead) { // read headers
 				Headers h = new Headers();
 				pos = h.readHeaders(buffer, root);
 				while (pos % 8 != 0)
 					pos++;
 				firstRead = false;
 			}
-			
+
 			unreaded -= read;
 			int len = (unreaded > 0) ? read * 8 : read * 8 - unusedBits;
 			int extraBytes = (unreaded > 0) ? 0 : unusedBytes;

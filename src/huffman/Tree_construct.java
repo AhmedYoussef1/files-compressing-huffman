@@ -1,37 +1,36 @@
 package huffman;
 
 import java.util.Arrays;
-import java.util.Map;
+import java.util.Collection;
 import java.util.PriorityQueue;
 
-import bits.Bits;
+import table.HuffmanTable;
 
 public class Tree_construct {
-	
-	public TreeNode make_tree(Map<String, TreeNode> table) {
-		PriorityQueue<TreeNode> a = new PriorityQueue<>(table.values());
-		
-		while(a.size() > 1)
+
+	public TreeNode make_tree(Collection<TreeNode> nodes) {
+		PriorityQueue<TreeNode> a = new PriorityQueue<>(nodes);
+
+		while (a.size() > 1)
 			a.add(new TreeNode(a.poll(), a.poll()));
-		
+
 		return a.poll();
 	}
-	
-	public int coding_table(TreeNode node, Map<String, boolean[]> table, boolean[] route, int pos) {
+
+	public int coding_table(TreeNode node, HuffmanTable table, boolean[] route, int pos) {
 		if (node.isTerminal()) {
-			table.put(Bits.hashMe(node.data), Arrays.copyOfRange(route, 0, pos));
+			table.coding(node.data, Arrays.copyOfRange(route, 0, pos));
 			return pos;
 		}
-		
+
 		route[pos] = true;
 		int one = coding_table(node.one(), table, route, pos + 1);
 		route[pos] = false;
 		int zero = coding_table(node.zero(), table, route, pos + 1);
-		
+
 		return (one > zero) ? one : zero;
 	}
-	
-	
+
 	public static void main(String[] args) {
 //		Tree_construct tc = new Tree_construct();
 //		
@@ -46,7 +45,7 @@ public class Tree_construct {
 //		boolean[] route = new boolean[10];
 //		
 //		System.out.println(tc.coding_table(root, cod_table, route, 0));
-		
+
 		System.out.println();
 	}
 }

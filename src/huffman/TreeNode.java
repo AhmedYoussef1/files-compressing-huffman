@@ -2,6 +2,7 @@ package huffman;
 
 public class TreeNode implements Comparable<TreeNode> {
 	public byte[] data;
+	public boolean[] code;
 
 	private int freq;
 	private TreeNode Zero;
