@@ -2,6 +2,8 @@ package bits;
 
 import java.util.BitSet;
 
+import huffman.Files;
+
 public class Bits {
 	private int size, len;
 	private BitSet bits;
@@ -76,20 +78,21 @@ public class Bits {
 		return str;
 	}
 
-	// I used this to hash array of bytes because
-	// Arrays.hashCode() doesn't work as expected :/
-	public static String hashMe(byte[] byteArr) {
-		StringBuilder str = new StringBuilder();
-		int i;
-		for (byte b : byteArr) {
-			for (i = 7; i >= 0; i--) {
-				if ((b & (1 << i)) > 0)
-					str.append('1');
-				else
-					str.append('0');
+	// I will reuse this variable for every function call to bytesToHex
+	// This is better for both memory and performance
+	private static StringBuilder hexString = new StringBuilder(2 * Files.get_n());
+
+	// Assuming hash.length = Files.get_n()
+	public static String hashMe(byte[] word) {
+		hexString.delete(0, hexString.length()); // clean
+		for (int i = 0; i < word.length; i++) {
+			String hex = Integer.toHexString(0xff & word[i]);
+			if (hex.length() == 1) {
+				hexString.append('0');
 			}
+			hexString.append(hex);
 		}
-		return str.toString();
+		return hexString.toString();
 	}
 
 	public static void main(String[] args) {

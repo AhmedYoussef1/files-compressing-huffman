@@ -25,7 +25,7 @@ public class Files {
 
 	public static int unusedBytes, unusedBits;
 
-	public Map<String, TreeNode> freq_table(File file) {
+	public Map<String, TreeNode> freq_table(File file) throws IOException {
 		int buffSize = Files.n * (max_memory() / Files.n);
 		if (buffSize == 0)
 			buffSize = Files.n;
@@ -33,31 +33,26 @@ public class Files {
 		byte[] buffer = new byte[buffSize];
 		Map<String, TreeNode> table = new HashMap<>();
 
-		try {
-			InputStream f = new FileInputStream(file);
-			int read;
-			while ((read = f.read(buffer)) > 0) { // read from file
-				// analysis the buffer
-				int i = 0;
-				for (; i < read; i += Files.n) {
-					byte[] word = Arrays.copyOfRange(buffer, i, i + Files.n);
-					String key = Bits.hashMe(word);
+		InputStream f = new FileInputStream(file);
+		int read;
+		while ((read = f.read(buffer)) > 0) { // read from file
+			// analysis the buffer
+			int i = 0;
+			for (; i < read; i += Files.n) {
+				byte[] word = Arrays.copyOfRange(buffer, i, i + Files.n);
+				String key = Bits.hashMe(word);
 
-					TreeNode node = table.get(key);
-					if (node == null)
-						table.put(key, new TreeNode(word, 1));
-					else
-						node.inc_freq();
-				}
-				// clear the buffer
-				buffer = new byte[buffSize];
+				TreeNode node = table.get(key);
+				if (node == null)
+					table.put(key, new TreeNode(word, 1));
+				else
+					node.inc_freq();
 			}
-			f.close();
-			return table;
-		} catch (IOException e) {
-			e.printStackTrace();
+			// clear the buffer
+			buffer = new byte[buffSize];
 		}
-		return null;
+		f.close();
+		return table;
 	}
 
 	public void compress(File inputFile, File outputFile, Map<String, boolean[]> table, TreeNode root) throws IOException {

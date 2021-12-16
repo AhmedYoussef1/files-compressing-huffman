@@ -62,8 +62,8 @@ public class MainIsHere {
 	public static void main(String[] args) {
 		boolean debug = true;
 		boolean compress = true;
-		String path = "files/img.png";
-		int n = 32;
+		String path = "files/gbbct10.seq";
+		int n = 1;
 		
 		try {
 			if(debug) {
@@ -90,7 +90,6 @@ public class MainIsHere {
 			System.out.println("Error: " + e.getMessage());
 		}
 	}
-
 }
 
 /* 
