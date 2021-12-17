@@ -2,6 +2,7 @@ package huffman;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.BitSet;
 
 import table.*;
 
@@ -29,16 +30,17 @@ public class MainIsHere {
 		System.out.println("Codes generation and more analyzing...");
 		TreeNode root = tree_c.make_tree(huffTable.getValues());
 
-		boolean[] route = new boolean[128 * Files.get_n()]; // edit this later
+//		boolean[] route = new boolean[128 * Files.get_n()]; // edit this later
 
-		tree_c.coding_table(root, huffTable, route, 0);
+//		tree_c.coding_table(root, huffTable, route, 0);
+		tree_c.coding_table(root, huffTable, new BitSet(), 0);
 
 		// calculate unused bits, unused bytes
 		Files.unusedBytes = (int) (Files.get_n() - inFile.length() % Files.get_n()) % Files.get_n();
 
 		long usedBits = 0;
 		for (TreeNode node : huffTable.getValues())
-			usedBits += node.code.length * node.get_freq();
+			usedBits += node.coding.len * node.get_freq();
 
 		Files.unusedBits = (int) (8 - usedBits % 8) % 8;
 
@@ -59,14 +61,29 @@ public class MainIsHere {
 	public static void main(String[] args) {
 		boolean debug = true;
 //		boolean compress = true;
-		String path = "files/img.png";
+		String path = "files/gbbct10.seq";
 		int n = 1;
-
+		
+		if(n < 1) {
+			System.out.println("Error: n must be positive integer!");
+			return;
+		}
+		
+		HuffmanTable huffTable;
+		if(n < 3)
+			huffTable = new TableArray(n);
+		else if (n < 5)
+			huffTable = new TableInt(n);
+		else if (n < 9)
+			huffTable = new TableLong(n);
+		else
+			huffTable = new TableString();
+			
 		try {
 			if (debug) {
 				Files.set_n(n);
 				long tik = System.nanoTime();
-				compressFile(path, new TableString());
+				compressFile(path, huffTable);
 				long tok = System.nanoTime();
 				System.out.println("Time: " + (tok - tik) / 1000000 + " ms");
 				tik = System.nanoTime();
@@ -85,6 +102,7 @@ public class MainIsHere {
 //			}
 		} catch (Exception e) {
 			System.out.println("Error: " + e.getMessage());
+			e.printStackTrace();
 		}
 	}
 }

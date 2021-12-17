@@ -1,9 +1,11 @@
 package huffman;
 
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.PriorityQueue;
 
+import bits.Code;
 import table.HuffmanTable;
 
 public class Tree_construct {
@@ -30,22 +32,39 @@ public class Tree_construct {
 
 		return (one > zero) ? one : zero;
 	}
+	
+	public void coding_table(TreeNode node, HuffmanTable table, BitSet route, int pos) {
+		if (node.isTerminal()) {
+			byte des[] = new byte[pos/8 + 1];
+			byte src[] = route.toByteArray();
+			System.arraycopy(route.toByteArray(), 0, des, 0, Math.min(src.length, des.length));
+			
+			table.get(node.data).coding = new Code(des.clone(), pos);
+			return;
+		}
+		
+		route.set(pos);
+		coding_table(node.one(), table, route, pos + 1);
+		route.clear(pos);
+		coding_table(node.zero(), table, route, pos + 1);
+	}
 
 	public static void main(String[] args) {
 //		Tree_construct tc = new Tree_construct();
 //		
-//		Map<String, TreeNode> table = new HashMap<>();
+//		HuffmanTable table = new TableArray(1);
 //		
-//		table.put("a", new TreeNode("a".getBytes(), 2));
-//		table.put("b", new TreeNode("b".getBytes(), 3));
-//		table.put("c", new TreeNode("c".getBytes(), 6));
+//		table.frequency("a".getBytes()); table.frequency("a".getBytes());
+//		table.frequency("b".getBytes()); table.frequency("b".getBytes()); table.frequency("b".getBytes());
+//		table.frequency("c".getBytes()); table.frequency("c".getBytes()); table.frequency("c".getBytes());
+//		table.frequency("c".getBytes()); table.frequency("c".getBytes()); table.frequency("c".getBytes());
 //		
-//		TreeNode root = tc.make_tree(table);
-//		Map<String, boolean[]> cod_table = new HashMap<>();
-//		boolean[] route = new boolean[10];
+//		TreeNode root = tc.make_tree(table.getValues());
 //		
-//		System.out.println(tc.coding_table(root, cod_table, route, 0));
-
-		System.out.println();
+//		BitSet bs = new BitSet();
+//		
+//		tc.coding_table(root, table, bs, 0);
+//
+//		System.out.println();
 	}
 }

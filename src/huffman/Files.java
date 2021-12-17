@@ -34,14 +34,18 @@ public class Files {
 
 		int read;
 		while ((read = f.read(buffer)) > 0) { // read from file
+			// clear trash from the buffer
+			if(read % Files.n != 0) {
+				for(int i = read; i < read + Files.n && i < buffSize; i++)
+					buffer[i] = 0;
+			}
 			// analysis the buffer
+			byte[] word = new byte[Files.n];
 			int i = 0;
 			for (; i < read; i += Files.n) {
-				byte[] word = Arrays.copyOfRange(buffer, i, i + Files.n);
-				huffTable.frequency(word);
+				System.arraycopy(buffer, i, word, 0, Files.n);
+				huffTable.frequency(word.clone());
 			}
-			// clear the buffer
-			buffer = new byte[buffSize];
 		}
 		f.close();
 	}
@@ -51,43 +55,38 @@ public class Files {
 		if (buffSize == 0)
 			buffSize = Files.n;
 
-		byte[] buffer = new byte[buffSize], out_buffer;
-		Bits compressed = new Bits(buffSize * 8);
+		byte[] buffer = new byte[buffSize];
+		Bits compressed = new Bits(buffSize);
 
 		InputStream in = new FileInputStream(inputFile);
 		OutputStream out = new FileOutputStream(outputFile);
 
-		byte lastByte = 0;
-		int read, lastBits = 0;
+		int read;
 
 		// headers
 		Headers h = new Headers();
 		h.writeHeaders(compressed, get_n(), unusedBytes, unusedBits, root);
-		while (compressed.length() % 8 != 0)
+		while (compressed.bytePos() % 8 != 0)
 			compressed.appendZero();
 
 		// data
 		while ((read = in.read(buffer)) > 0) {
 			for (int i = 0; i < read; i += Files.n) {
 				byte[] word = Arrays.copyOfRange(buffer, i, i + Files.n);
-				compressed.append(huffTable.get(word).code);
+				TreeNode node = huffTable.get(word);
+				compressed.append(node.coding.data, node.coding.len);
 			}
 			// write compressed to file (without the last byte)
-			out_buffer = compressed.bytes_plusOne();
-			out.write(out_buffer, 0, out_buffer.length - 2);
-			// store last bits
-			lastBits = compressed.length() % 8;
-			lastByte = out_buffer[out_buffer.length - 2];
-
-			compressed.clear();
-			// add last bits
-			compressed.append(lastByte, lastBits);
-
+			ByteBuffer bb = compressed.get();
+			out.write(bb.array(), 0, bb.position());
+			compressed.clean();
+			
 			// clear the buffer
 			buffer = new byte[buffSize];
 		}
 		// write last bits
-		if (lastBits > 0)
+		Byte lastByte = compressed.lastByte();
+		if (lastByte != null)
 			out.write(lastByte);
 
 		in.close();
@@ -130,14 +129,11 @@ public class Files {
 				out.write(uncompressed.array(), 0, uncompressed.position() - extraBytes);
 				uncompressed.clear();
 			}
-			// clear buffer
-			buffer = new byte[buffSize];
 			pos = 0;
 		}
 
 		in.close();
 		out.close();
-
 	}
 
 	private Object[] decode(TreeNode root, TreeNode node, byte[] read, int offset, int bitLen, ByteBuffer write) {

@@ -1,68 +1,67 @@
 package bits;
 
-import java.util.BitSet;
+import java.nio.ByteBuffer;
 
 public class Bits {
-	private int size, len;
-	private BitSet bits;
+	private ByteBuffer bBuffer;
+	private byte b;
+	private int bPos;
 
-	public Bits(int size) {
-		this.size = size;
-		this.len = 0;
-		this.bits = new BitSet(size);
+	public Bits(int n) {
+		bBuffer = ByteBuffer.allocate(n);
+		bPos = 0;
 	}
 
-	public int length() {
-		return this.len;
+	public int bytePos() {
+		return bPos;
 	}
 
-	public int empty() {
-		return this.size - this.len;
-	}
+	// assume bits after the given length are zeroes
+	public void append(byte bits, int len) {
+		if (bPos + len > 8) {
+			b |= bits << bPos;
+			bBuffer.put(b);
 
-	// return byte array + 1 extra byte
-	// BitSet doesn't return last all zero bytes
-	public byte[] bytes_plusOne() {
-		this.bits.set(len + 8);
-		return this.bits.toByteArray();
-	}
-
-	public void clear() {
-		this.len = 0;
-		this.bits.clear();
-	}
-
-	public int appendOne() {
-		bits.set(len);
-		return ++len;
-	}
-
-	public int appendZero() {
-		return ++len;
-	}
-
-	public int append(boolean bitArr[]) {
-		for (boolean val : bitArr) {
-			if (val)
-				bits.set(len);
-			len++;
+			b = (byte) ((0xff & bits) >> (8 - bPos));
+			bPos += len - 8;
+		} else {
+			b |= bits << bPos;
+			bPos += len;
 		}
-		return len;
 	}
 
-	public int append(byte b, int n) {
-		for (int i = 0; i < n; i++) {
-			if ((b & (1 << i)) > 0)
-				this.bits.set(len);
-			len++;
+	public void append(byte[] byteArr, int bitsLen) {
+		for (byte b : byteArr) {
+			if (bitsLen > 8) {
+				append(b, 8);
+				bitsLen -= 8;
+			} else {
+				append(b, bitsLen);
+				break;
+			}
 		}
-		return len;
 	}
 
-	public int append(byte[] bytes) {
-		for (byte b : bytes)
-			append(b, 8);
-		return len;
+	public void appendOne() {
+		append((byte) 1, 1);
+	}
+
+	public void appendZero() {
+		append((byte) 0, 1);
+	}
+
+	public ByteBuffer get() {
+		return bBuffer;
+	}
+
+	public void clean() {
+		bBuffer.clear();
+	}
+
+	public Byte lastByte() {
+		if (bPos % 8 > 0)
+			return b;
+		return null;
 	}
 
 	public static String ByteToString(byte b) {
@@ -75,11 +74,4 @@ public class Bits {
 		}
 		return str;
 	}
-
-	public static void main(String[] args) {
-		byte b = 'c';
-
-		System.out.println(Bits.ByteToString(b));
-	}
-
 }

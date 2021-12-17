@@ -12,7 +12,7 @@ public class Headers {
 		bb.putInt(unusedBytes);
 		bb.put((byte) unusedBits);
 
-		bits.append(bb.array());
+		bits.append(bb.array(), bb.array().length * 8);
 		encodeTree(tree, bits);
 	}
 
@@ -31,7 +31,7 @@ public class Headers {
 	private void encodeTree(TreeNode node, Bits treeDFS) {
 		if (node.data != null) {
 			treeDFS.appendZero();
-			treeDFS.append(node.data);
+			treeDFS.append(node.data, node.data.length * 8);
 			return;
 		}
 		treeDFS.appendOne();

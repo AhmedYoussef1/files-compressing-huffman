@@ -1,8 +1,11 @@
 package huffman;
 
+import bits.Code;
+
 public class TreeNode implements Comparable<TreeNode> {
 	public byte[] data;
 	public boolean[] code;
+	public Code coding;
 
 	private int freq;
 	private TreeNode Zero;
